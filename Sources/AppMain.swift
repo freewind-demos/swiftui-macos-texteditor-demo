@@ -1,4 +1,4 @@
-import Cocoa
+import SwiftUI
 
 @main
 struct TextEditorApp: App {
