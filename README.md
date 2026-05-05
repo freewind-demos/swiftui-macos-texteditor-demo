@@ -1,107 +1,60 @@
-# SwiftUI macOS TextEditor 多行文本编辑
+# SwiftUI macOS Editor
 
 ## 简介
 
-演示 SwiftUI 中 TextEditor 的用法，用于多行文本输入和编辑。
+演示一个最小的 SwiftUI macOS 窗口，窗口内容只有一个普通 `TextEditor`。
 
 ## 快速开始
 
 ```bash
 cd swiftui-macos-texteditor-demo
-xcodegen generate
-open SwiftUITextEditorDemo.xcodeproj
-# Cmd+R 运行
+./scripts/build.sh
+open build/DerivedData/Build/Products/Debug/SwiftUITextEditorDemo.app
 ```
 
 ## 概念讲解
 
-### 基础 TextEditor
+### Window
 
-TextEditor 用于多行文本编辑，与 TextField 不同，它支持多行输入：
+`App` 定义主窗口，直接把 `ContentView` 放进去：
+
+```swift
+Window("Editor", id: "main") {
+    ContentView()
+}
+```
+
+### TextEditor
+
+`TextEditor` 绑定一个 `String`，就是最基础的多行文本输入：
 
 ```swift
 @State private var text = ""
 
 TextEditor(text: $text)
-    .frame(minHeight: 150)
-```
-
-### 固定高度
-
-使用 `.frame()` 设置尺寸：
-
-```swift
-TextEditor(text: $text)
-    .frame(height: 200)
-```
-
-### 带占位符的 TextEditor
-
-TextEditor 原生不支持占位符，需要自定义实现：
-
-```swift
-struct PlaceholderTextEditor: View {
-    let placeholder: String
-    @Binding var text: String
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            if text.isEmpty {
-                Text(placeholder)
-                    .foregroundColor(.gray)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 8)
-            }
-            TextEditor(text: $text)
-                .scrollContentBackground(.hidden)
-        }
-    }
-}
-```
-
-### 隐藏背景
-
-macOS 的 TextEditor 默认有背景，使用 `.scrollContentBackground(.hidden)` 可以隐藏：
-
-```swift
-TextEditor(text: $text)
-    .scrollContentBackground(.hidden)
 ```
 
 ## 完整示例
 
 ```swift
 struct ContentView: View {
-    @State private var text = "初始文本"
+    @State private var text = ""
 
     var body: some View {
-        VStack {
-            TextEditor(text: $text)
-                .frame(minHeight: 150)
-                .border(Color.gray)
-
-            Text("字符数: \(text.count)")
-        }
-        .padding()
+        TextEditor(text: $text)
+            .padding()
     }
 }
 ```
 
 ## 完整讲解（中文）
 
-### TextEditor vs TextField
+这个 demo 很单纯：
 
-| 特性 | TextField | TextEditor |
-|------|----------|------------|
-| 单行 | 是 | 否 |
-| 多行 | 否 | 是 |
-| 预设样式 | 占位符 | 需要自定义 |
+1. 启动后创建一个标题为 `Editor` 的窗口。
+2. 窗口里只放一个 `TextEditor`。
+3. `text` 是本地 `@State`，输入什么就显示什么。
 
-### 使用场景
+这里没有加占位符、工具栏、字符统计、存储、语法高亮。
 
-- TextField：用户名、邮箱、搜索框等单行输入
-- TextEditor：备注、笔记、评论等多行输入
-
-### 性能注意
-
-TextEditor 基于 NSTextView，大量文本时可能有性能考虑。
+如果你只想要“一个可输入多行文本的窗口”，这个版本已经是最小实现。
