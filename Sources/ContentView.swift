@@ -124,6 +124,9 @@ private struct LightPanelGroupBoxStyle: GroupBoxStyle {
 }
 
 private struct InstrumentedTextView: NSViewRepresentable {
+    private static let editorFont = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
+    private static let editorTextColor = NSColor.black
+
     @Binding var text: String
     @Binding var snapshot: EditorSnapshot
 
@@ -154,14 +157,11 @@ private struct InstrumentedTextView: NSViewRepresentable {
         textView.usesFindBar = true
         textView.drawsBackground = true
         textView.backgroundColor = .white
-        textView.textColor = .black
-        textView.insertionPointColor = .black
-        textView.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
         textView.textContainerInset = NSSize(width: 12, height: 12)
         textView.textContainer?.lineFragmentPadding = 6
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
-        textView.string = text
+        Self.applyEditorStyle(textView, string: text)
 
         scrollView.documentView = textView
         context.coordinator.connect(scrollView: scrollView, textView: textView)
@@ -176,10 +176,35 @@ private struct InstrumentedTextView: NSViewRepresentable {
         }
 
         if textView.string != text {
-            textView.string = text
+            Self.applyEditorStyle(textView, string: text)
+        } else {
+            Self.applyEditorStyle(textView)
         }
 
         context.coordinator.pushSnapshot()
+    }
+
+    private static func applyEditorStyle(_ textView: NSTextView, string: String? = nil) {
+        textView.font = editorFont
+        textView.textColor = editorTextColor
+        textView.insertionPointColor = editorTextColor
+
+        var typingAttributes = textView.typingAttributes
+        typingAttributes[.font] = editorFont
+        typingAttributes[.foregroundColor] = editorTextColor
+        textView.typingAttributes = typingAttributes
+
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: editorFont,
+            .foregroundColor: editorTextColor,
+        ]
+
+        if let string {
+            textView.textStorage?.setAttributedString(NSAttributedString(string: string, attributes: attrs))
+        } else {
+            let range = NSRange(location: 0, length: textView.string.utf16.count)
+            textView.textStorage?.setAttributes(attrs, range: range)
+        }
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
@@ -222,6 +247,7 @@ private struct InstrumentedTextView: NSViewRepresentable {
                 return
             }
 
+            InstrumentedTextView.applyEditorStyle(textView)
             parent.text = textView.string
             pushSnapshot()
         }
