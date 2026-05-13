@@ -10,11 +10,13 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("SwiftUI Text Area Demo")
                 .font(.title2)
+                .foregroundStyle(.primary)
 
             GroupBox("编辑区") {
                 InstrumentedTextView(text: $text, snapshot: $snapshot)
                     .frame(minHeight: 260)
             }
+            .groupBoxStyle(LightPanelGroupBoxStyle())
 
             GroupBox("实时信息") {
                 VStack(alignment: .leading, spacing: 8) {
@@ -29,6 +31,7 @@ struct ContentView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .groupBoxStyle(LightPanelGroupBoxStyle())
 
             GroupBox("当前内容") {
                 ScrollView {
@@ -50,9 +53,11 @@ struct ContentView: View {
                 }
                 .frame(minHeight: 220)
             }
+            .groupBoxStyle(LightPanelGroupBoxStyle())
         }
         .padding(16)
         .frame(minWidth: 860, minHeight: 760)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 }
 
@@ -90,6 +95,29 @@ private struct MetricRow: View {
     }
 }
 
+private struct LightPanelGroupBoxStyle: GroupBoxStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            configuration.label
+                .font(.headline)
+                .foregroundStyle(.black)
+
+            configuration.content
+                .foregroundStyle(.black)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.white)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
 private struct InstrumentedTextView: NSViewRepresentable {
     @Binding var text: String
     @Binding var snapshot: EditorSnapshot
@@ -105,6 +133,7 @@ private struct InstrumentedTextView: NSViewRepresentable {
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = false
         scrollView.drawsBackground = true
+        scrollView.backgroundColor = .white
         scrollView.contentView.postsBoundsChangedNotifications = true
 
         let textView = NSTextView()
@@ -117,7 +146,9 @@ private struct InstrumentedTextView: NSViewRepresentable {
         textView.allowsUndo = true
         textView.usesFindBar = true
         textView.drawsBackground = true
-        textView.backgroundColor = .textBackgroundColor
+        textView.backgroundColor = .white
+        textView.textColor = .black
+        textView.insertionPointColor = .black
         textView.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
         textView.textContainerInset = NSSize(width: 12, height: 12)
         textView.textContainer?.lineFragmentPadding = 6
