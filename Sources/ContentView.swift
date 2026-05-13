@@ -63,6 +63,33 @@ struct AutoGrowingTextArea: NSViewRepresentable {
     // 外层算好的可用宽度。高度测量必须依赖宽度，因为换行会影响总高度。
     let width: CGFloat
 
+    // 把“文本 + 宽度 -> 高度”的复杂细节收口到一个地方。
+    // 外面调用时，不必再直接面对 layoutManager / textContainer 这些对象。
+    private static func measureTextHeight(text: String, width: CGFloat, font: NSFont) -> CGFloat {
+        let textStorage = NSTextStorage(string: text)
+        let layoutManager = NSLayoutManager()
+        let textContainer = NSTextContainer(
+            containerSize: NSSize(
+                width: width,
+                height: CGFloat.greatestFiniteMagnitude
+            )
+        )
+
+        textContainer.widthTracksTextView = false
+        textContainer.heightTracksTextView = false
+        textContainer.lineFragmentPadding = 0
+
+        textStorage.addLayoutManager(layoutManager)
+        layoutManager.addTextContainer(textContainer)
+        layoutManager.ensureLayout(for: textContainer)
+
+        // `usedRect.height` 就是文本按当前宽度换行后，真正占掉的高度。
+        // 空字符串时它可能接近 0，所以仍用单行高度兜底。
+        let usedHeight = ceil(layoutManager.usedRect(for: textContainer).height)
+        let lineHeight = ceil(layoutManager.defaultLineHeight(for: font))
+        return max(lineHeight, usedHeight)
+    }
+
     func makeCoordinator() -> Coordinator {
         // Coordinator 是 AppKit delegate 的承接层。
         // SwiftUI struct 本身很轻，不适合直接挂 NSTextViewDelegate。
@@ -162,25 +189,18 @@ struct AutoGrowingTextArea: NSViewRepresentable {
             // 这里是“高度计算核心”。
             // 输入：当前文本 + 当前宽度。
             // 输出：nextHeight，并在最后写回 `height` Binding。
-            guard width > 0,
-                  let textContainer = textView.textContainer,
-                  let layoutManager = textView.layoutManager else {
+            guard width > 0 else {
                 return
             }
 
-            textContainer.containerSize = NSSize(
-                width: width,
-                height: CGFloat.greatestFiniteMagnitude
-            )
-
-            layoutManager.ensureLayout(for: textContainer)
-
-            // `usedRect.height` = layout 后，文本真实占用的高度。
-            // 空内容时 usedRect 可能接近 0，用单行高度兜底，避免组件塌陷。
-            let usedHeight = ceil(layoutManager.usedRect(for: textContainer).height)
             let font = textView.font ?? .systemFont(ofSize: NSFont.systemFontSize)
-            let lineHeight = ceil(layoutManager.defaultLineHeight(for: font))
-            let nextHeight = max(lineHeight, usedHeight)
+            // 现在外层只看得见一个简单规则：
+            // “给我文本和宽度，我返回该有的高度”。
+            let nextHeight = AutoGrowingTextArea.measureTextHeight(
+                text: textView.string,
+                width: width,
+                font: font
+            )
 
             // 先把底层 NSTextView 自己的 frame 调到新高度，避免文档视图尺寸落后。
             textView.frame.size = NSSize(width: width, height: nextHeight)
