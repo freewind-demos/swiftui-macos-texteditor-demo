@@ -145,9 +145,12 @@ private struct InstrumentedTextView: NSViewRepresentable {
         scrollView.appearance = NSAppearance(named: .aqua)
         scrollView.contentView.postsBoundsChangedNotifications = true
 
-        let textView = NSTextView()
+        let textView = FixedColorTextView()
         textView.delegate = context.coordinator
         textView.appearance = NSAppearance(named: .aqua)
+        textView.onAppearanceChange = { view in
+            Self.applyEditorStyle(view)
+        }
         textView.isRichText = false
         textView.isEditable = true
         textView.isSelectable = true
@@ -155,6 +158,7 @@ private struct InstrumentedTextView: NSViewRepresentable {
         textView.isVerticallyResizable = true
         textView.allowsUndo = true
         textView.usesFindBar = true
+        textView.usesAdaptiveColorMappingForDarkAppearance = false
         textView.drawsBackground = true
         textView.backgroundColor = .white
         textView.textContainerInset = NSSize(width: 12, height: 12)
@@ -185,6 +189,7 @@ private struct InstrumentedTextView: NSViewRepresentable {
     }
 
     private static func applyEditorStyle(_ textView: NSTextView, string: String? = nil) {
+        textView.usesAdaptiveColorMappingForDarkAppearance = false
         textView.font = editorFont
         textView.textColor = editorTextColor
         textView.insertionPointColor = editorTextColor
@@ -204,6 +209,16 @@ private struct InstrumentedTextView: NSViewRepresentable {
         } else {
             let range = NSRange(location: 0, length: textView.string.utf16.count)
             textView.textStorage?.setAttributes(attrs, range: range)
+        }
+    }
+
+    final class FixedColorTextView: NSTextView {
+        var onAppearanceChange: ((NSTextView) -> Void)?
+
+        override func viewDidChangeEffectiveAppearance() {
+            super.viewDidChangeEffectiveAppearance()
+            usesAdaptiveColorMappingForDarkAppearance = false
+            onAppearanceChange?(self)
         }
     }
 
