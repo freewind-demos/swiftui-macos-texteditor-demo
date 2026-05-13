@@ -3,6 +3,7 @@ import SwiftUI
 import AppKit
 
 struct ContentView: View {
+    private let secondaryTextColor = Color(nsColor: NSColor(calibratedWhite: 0.35, alpha: 1))
     @State private var text = Self.demoText
     @State private var snapshot = EditorSnapshot.empty
 
@@ -10,7 +11,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("SwiftUI Text Area Demo")
                 .font(.title2)
-                .foregroundStyle(.primary)
+                .foregroundStyle(.black)
 
             GroupBox("编辑区") {
                 InstrumentedTextView(text: $text, snapshot: $snapshot)
@@ -39,11 +40,12 @@ struct ContentView: View {
                         ForEach(Array(snapshot.lines.enumerated()), id: \.offset) { index, line in
                             HStack(alignment: .firstTextBaseline, spacing: 8) {
                                 Text(snapshot.visibleLineNumberSet.contains(index + 1) ? "visible" : "hidden")
-                                    .foregroundStyle(snapshot.visibleLineNumberSet.contains(index + 1) ? .green : .secondary)
+                                    .foregroundStyle(snapshot.visibleLineNumberSet.contains(index + 1) ? Color.green : secondaryTextColor)
                                 Text("L\(index + 1)")
                                     .frame(width: 44, alignment: .leading)
                                 Text(line.isEmpty ? "''" : line)
                                     .textSelection(.enabled)
+                                    .foregroundStyle(.black)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .font(.system(.body, design: .monospaced))
@@ -57,7 +59,8 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(minWidth: 860, minHeight: 760)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(Color.white)
+        .preferredColorScheme(.light)
     }
 }
 
@@ -86,11 +89,12 @@ private struct MetricRow: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(label)
                 .font(.system(.body, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color(nsColor: NSColor(calibratedWhite: 0.35, alpha: 1)))
                 .frame(width: 140, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
             Text(value)
                 .textSelection(.enabled)
+                .foregroundStyle(.black)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -135,10 +139,12 @@ private struct InstrumentedTextView: NSViewRepresentable {
         scrollView.autohidesScrollers = false
         scrollView.drawsBackground = true
         scrollView.backgroundColor = .white
+        scrollView.appearance = NSAppearance(named: .aqua)
         scrollView.contentView.postsBoundsChangedNotifications = true
 
         let textView = NSTextView()
         textView.delegate = context.coordinator
+        textView.appearance = NSAppearance(named: .aqua)
         textView.isRichText = false
         textView.isEditable = true
         textView.isSelectable = true
