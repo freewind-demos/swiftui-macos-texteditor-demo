@@ -6,6 +6,6 @@ struct TextEditorApp: App {
         Window("Editor", id: "main") {
             ContentView()
         }
-        .defaultSize(width: 500, height: 400)
+        .defaultSize(width: 860, height: 760)
     }
 }
