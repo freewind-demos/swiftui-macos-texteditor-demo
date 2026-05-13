@@ -15,6 +15,47 @@ struct TextLayoutMetrics: Equatable {
     }
 }
 
+// 全局独立 helper：
+// 只负责“文本 + 宽度 + 字体 -> 视觉行数 + 单行高”。
+// 它不依赖具体 View，也不碰 SwiftUI state。
+func measureTextLayoutMetrics(text: String, width: CGFloat, font: NSFont) -> TextLayoutMetrics {
+    let textStorage = NSTextStorage(string: text)
+    let layoutManager = NSLayoutManager()
+    let textContainer = NSTextContainer(
+        containerSize: NSSize(
+            width: width,
+            height: CGFloat.greatestFiniteMagnitude
+        )
+    )
+
+    textContainer.widthTracksTextView = false
+    textContainer.heightTracksTextView = false
+    textContainer.lineFragmentPadding = 0
+
+    textStorage.addLayoutManager(layoutManager)
+    layoutManager.addTextContainer(textContainer)
+    layoutManager.ensureLayout(for: textContainer)
+
+    let lineHeight = ceil(layoutManager.defaultLineHeight(for: font))
+    var lineCount = 0
+    let glyphRange = layoutManager.glyphRange(for: textContainer)
+
+    layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { _, _, _, _, _ in
+        lineCount += 1
+    }
+
+    // 文本以换行结尾时，AppKit 会额外留一条空白行，要把它也算进去。
+    if layoutManager.extraLineFragmentTextContainer != nil,
+       !layoutManager.extraLineFragmentRect.isEmpty {
+        lineCount += 1
+    }
+
+    return TextLayoutMetrics(
+        lineCount: max(1, lineCount),
+        singleLineHeight: lineHeight
+    )
+}
+
 struct ContentView: View {
     // `@State` = 这个 View 自己持有的状态。这里存“文本内容”。
     @State private var text = """
@@ -82,46 +123,6 @@ struct AutoGrowingTextArea: NSViewRepresentable {
     @Binding var metrics: TextLayoutMetrics
     // 外层算好的可用宽度。高度测量必须依赖宽度，因为换行会影响总高度。
     let width: CGFloat
-
-    // 把“文本 + 宽度 -> 视觉行数 + 单行高”的复杂细节收口到一个地方。
-    // 外面调用时，不必再直接面对 layoutManager / textContainer 这些对象。
-    private static func measureTextLayoutMetrics(text: String, width: CGFloat, font: NSFont) -> TextLayoutMetrics {
-        let textStorage = NSTextStorage(string: text)
-        let layoutManager = NSLayoutManager()
-        let textContainer = NSTextContainer(
-            containerSize: NSSize(
-                width: width,
-                height: CGFloat.greatestFiniteMagnitude
-            )
-        )
-
-        textContainer.widthTracksTextView = false
-        textContainer.heightTracksTextView = false
-        textContainer.lineFragmentPadding = 0
-
-        textStorage.addLayoutManager(layoutManager)
-        layoutManager.addTextContainer(textContainer)
-        layoutManager.ensureLayout(for: textContainer)
-
-        let lineHeight = ceil(layoutManager.defaultLineHeight(for: font))
-        var lineCount = 0
-        let glyphRange = layoutManager.glyphRange(for: textContainer)
-
-        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { _, _, _, _, _ in
-            lineCount += 1
-        }
-
-        // 文本以换行结尾时，AppKit 会额外留一条空白行，要把它也算进去。
-        if layoutManager.extraLineFragmentTextContainer != nil,
-           !layoutManager.extraLineFragmentRect.isEmpty {
-            lineCount += 1
-        }
-
-        return TextLayoutMetrics(
-            lineCount: max(1, lineCount),
-            singleLineHeight: lineHeight
-        )
-    }
 
     func makeCoordinator() -> Coordinator {
         // Coordinator 是 AppKit delegate 的承接层。
@@ -229,7 +230,7 @@ struct AutoGrowingTextArea: NSViewRepresentable {
             let font = textView.font ?? .systemFont(ofSize: NSFont.systemFontSize)
             // 现在外层只看得见一个简单规则：
             // “给我文本和宽度，我返回视觉行数与单行高”。
-            let nextMetrics = AutoGrowingTextArea.measureTextLayoutMetrics(
+                let nextMetrics = measureTextLayoutMetrics(
                 text: textView.string,
                 width: width,
                 font: font
