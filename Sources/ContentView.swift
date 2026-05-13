@@ -397,22 +397,39 @@ private struct EditorSnapshot: Equatable {
         }
 
         layoutManager.ensureLayout(for: textContainer)
-
-        let glyphRange = layoutManager.glyphRange(forBoundingRect: textView.visibleRect, in: textContainer)
-        if glyphRange.length == 0 {
-            return [1]
-        }
-
+        let visibleRect = textView.visibleRect.offsetBy(
+            dx: -textView.textContainerOrigin.x,
+            dy: -textView.textContainerOrigin.y
+        )
+        let textLength = (textView.string as NSString).length
         let lineStarts = buildLineStarts(lines: lines)
-        var visible = Set<Int>()
+        var visible: [Int] = []
 
-        layoutManager.enumerateLineFragments(forGlyphRange: glyphRange) { _, _, _, fragmentGlyphRange, _ in
-            let characterRange = layoutManager.characterRange(forGlyphRange: fragmentGlyphRange, actualGlyphRange: nil)
-            let lineNumber = lineNumber(forCharacterLocation: characterRange.location, lineStarts: lineStarts)
-            visible.insert(lineNumber)
+        for index in lineStarts.indices {
+            let start = lineStarts[index]
+            let nextStart = index + 1 < lineStarts.count ? lineStarts[index + 1] : textLength
+            let lineRange = NSRange(location: start, length: max(nextStart - start, 0))
+
+            let isVisible: Bool
+            if lineRange.length == 0 {
+                let extraRect = layoutManager.extraLineFragmentRect
+                isVisible = !extraRect.isEmpty && extraRect.intersects(visibleRect)
+            } else {
+                let glyphRange = layoutManager.glyphRange(forCharacterRange: lineRange, actualCharacterRange: nil)
+                if glyphRange.length == 0 {
+                    isVisible = false
+                } else {
+                    let lineRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+                    isVisible = lineRect.intersects(visibleRect)
+                }
+            }
+
+            if isVisible {
+                visible.append(index + 1)
+            }
         }
 
-        return visible.isEmpty ? [1] : visible.sorted()
+        return visible.isEmpty ? [1] : visible
     }
 
     private static func buildLineStarts(lines: [String]) -> [Int] {
@@ -428,16 +445,6 @@ private struct EditorSnapshot: Equatable {
         }
 
         return starts.isEmpty ? [0] : starts
-    }
-
-    private static func lineNumber(forCharacterLocation location: Int, lineStarts: [Int]) -> Int {
-        for index in stride(from: lineStarts.count - 1, through: 0, by: -1) {
-            if location >= lineStarts[index] {
-                return index + 1
-            }
-        }
-
-        return 1
     }
 
     private static func format(_ value: CGFloat) -> String {
