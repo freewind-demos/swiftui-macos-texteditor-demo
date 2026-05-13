@@ -4,11 +4,25 @@ import AppKit
 
 struct ContentView: View {
     private let secondaryTextColor = Color(nsColor: NSColor(calibratedWhite: 0.35, alpha: 1))
+    private let debugBannerBackground = Color(nsColor: NSColor.systemYellow)
+    private let debugBannerText = Color.black
     @State private var text = Self.demoText
     @State private var snapshot = EditorSnapshot.empty
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Text("DEBUG BUILD 60eb3a7 2026-05-13 22:37:51")
+                .font(.system(.headline, design: .monospaced))
+                .foregroundStyle(debugBannerText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(debugBannerBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(Color.black, lineWidth: 1)
+                )
+
             Text("SwiftUI Text Area Demo")
                 .font(.title2)
                 .foregroundStyle(.black)
@@ -125,7 +139,8 @@ private struct LightPanelGroupBoxStyle: GroupBoxStyle {
 
 private struct InstrumentedTextView: NSViewRepresentable {
     private static let editorFont = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
-    private static let editorTextColor = NSColor.black
+    private static let editorTextColor = NSColor.systemRed
+    private static let editorBackgroundColor = NSColor(calibratedRed: 1, green: 0.97, blue: 0.75, alpha: 1)
 
     @Binding var text: String
     @Binding var snapshot: EditorSnapshot
@@ -141,7 +156,7 @@ private struct InstrumentedTextView: NSViewRepresentable {
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = false
         scrollView.drawsBackground = true
-        scrollView.backgroundColor = .white
+        scrollView.backgroundColor = Self.editorBackgroundColor
         scrollView.appearance = NSAppearance(named: .aqua)
         scrollView.contentView.postsBoundsChangedNotifications = true
 
@@ -160,7 +175,7 @@ private struct InstrumentedTextView: NSViewRepresentable {
         textView.usesFindBar = true
         textView.usesAdaptiveColorMappingForDarkAppearance = false
         textView.drawsBackground = true
-        textView.backgroundColor = .white
+        textView.backgroundColor = Self.editorBackgroundColor
         textView.textContainerInset = NSSize(width: 12, height: 12)
         textView.textContainer?.lineFragmentPadding = 6
         textView.textContainer?.widthTracksTextView = true
