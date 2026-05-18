@@ -1,38 +1,79 @@
-# SwiftUI macOS Editor
+# SwiftUI macOS TextEditor Demo
 
-最小可读版 macOS 文本编辑 demo。
+最小 macOS 文本编辑 demo。
 
-## 目标
+## 实际内容
 
-- 白底深字，系统深浅色切换下仍可读
-- 不依赖多层补丁式配色修复
-- `View` / `theme` / `NSTextView bridge` 职责分开
+- SwiftUI app
+- 单窗口，默认 `800x600`
+- 页面只有一个铺满窗口的原生 `TextEditor`
+- 文本状态仅存在 `ContentView` 的本地 `@State`
+- 无文件读写、无自定义 `NSTextView bridge`、无主题层
 
-## 结构
+## 代码结构
 
 - `Sources/AppMain.swift`
-  - app 入口，窗口固定浅色
+  - app 入口
+  - 创建 `ContentView`
+  - 设置默认窗口尺寸
 - `Sources/ContentView.swift`
-  - `ContentView`：页面布局
-  - `EditorTheme`：唯一配色与字体来源
-  - `PlainTextEditor`：SwiftUI 到 `NSTextView` 的最小桥接
+  - 持有 `text` 状态
+  - 渲染全尺寸 `TextEditor`
+- `project.yml`
+  - `XcodeGen` 工程定义
+  - app 名 `SwiftUITextEditorDemo`
+  - macOS target `14.0`
+- `scripts/build.sh`
+  - 生成 `.xcodeproj`
+  - 执行 Debug/Release 构建
 
-## 为什么不用原生 `TextEditor`
+## 运行要求
 
-这个 demo 要稳定控制 macOS 编辑区的：
+- Xcode
+- `XcodeGen`
 
-- 当前文本 attrs
-- 新输入 `typingAttributes`
-- 插入光标颜色
-- 背景色
-- appearance 变化后的重新应用
+安装 `XcodeGen`:
 
-原生 `TextEditor` 对这些控制不够直接，所以这里直接桥接 `NSTextView`，把颜色源收口到一处。
+```bash
+brew install xcodegen
+```
 
 ## 构建
 
+Debug:
+
 ```bash
-cd swiftui-macos-texteditor-demo
 ./scripts/build.sh
 open build/DerivedData/Build/Products/Debug/SwiftUITextEditorDemo.app
 ```
+
+Release:
+
+```bash
+./scripts/build-release.sh
+open dist/SwiftUITextEditorDemo.app
+```
+
+## 工程生成
+
+项目工程文件来自 `project.yml`，构建脚本会先执行：
+
+```bash
+xcodegen generate
+```
+
+也可手动生成：
+
+```bash
+xcodegen generate
+open SwiftUITextEditorDemo.xcodeproj
+```
+
+## 当前定位
+
+此仓库是最小基线 demo，适合继续加：
+
+- 文本持久化
+- 打开/保存文件
+- 编辑器主题
+- `NSTextView` 深度定制
