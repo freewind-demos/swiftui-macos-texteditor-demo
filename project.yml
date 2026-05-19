@@ -21,3 +21,11 @@ targets:
         CODE_SIGN_STYLE: Manual
         DEVELOPMENT_TEAM: ""
         ENABLE_HARDENED_RUNTIME: NO
+    productName: SwiftUITextEditorDemo
+schemes:
+  SwiftUITextEditorDemo:
+    build:
+      targets:
+        SwiftUITextEditorDemo: all
+    run:
+      config: Debug
